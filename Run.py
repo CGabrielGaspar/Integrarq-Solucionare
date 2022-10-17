@@ -6,15 +6,16 @@ from datetime import datetime
 import time
 
 
-def send(client, confirm=True):
+def send(client, interval=30, confirm=True):
     """
     Envia os andamentos e salva o relat no Google Drive.
 
+    :param interval: Intervalo em dias para captura. Normalmente 30 dias.
     :param str client: Must be: "Bermudes_DF"; "Bermudes_RJ"; "JG"; "TAVAD"; "tests"
     :param bool confirm: True/False - Aguardar verificação dos dados antes de realizar o envio. Normally True
     """
     try:
-        report = Solucionare.run_processes(client, confirm)
+        report = Solucionare.run_processes(client, interval, confirm)
         response = Gdrive.run_processes(report, client)
 
         if response:
@@ -24,26 +25,25 @@ def send(client, confirm=True):
         print(traceback.format_exc())
 
 
-def daily_loop(target_time, secs_min, secs_hr, secs_day, check=False):
+def daily_loop(target_time, interval=30, check=False):
     """
     Loop diário para disparo. Verifica se é dia de semana e loga o tempo de disparo (normalmente 4min).
-    Bool 'Check' determina se o usuário deverá verificar as informações de cada formulário antes do disparo.
 
-    :param target_time: list[int]
-    :param secs_min: int
-    :param secs_hr: int
-    :param secs_day: int
-    :param check: bool
-    :return:
+    :param int interval: Intervalo em dias para captura. Normalmente 30 dias.
+    :param list[int] target_time: Hora marcada para disparo dos e-mails. Deve ser dividido em hora em min. [hh, mm]
+    :param bool check: determina se o usuário deverá verificar as informações de cada formulário antes do disparo. Normalmente falso.
     """
+    secs_min = 60
+    secs_hr = 60 * secs_min
+    secs_day = 24 * secs_hr
     weekday = datetime.today().isoweekday()
     start_time = datetime.now()
     if int(weekday) <= 5:
         input("Realizar disparos: \n")
-        send("TAVAD", check)
-        send("Bermudes_RJ", check)
-        send("JG", check)
-        send("Bermudes_DF", check)
+        send("TAVAD", interval, check)
+        send("Bermudes_RJ", interval, check)
+        send("JG", interval, check)
+        send("Bermudes_DF", interval, check)
 
     end_time = datetime.now()
     hour = end_time.hour
@@ -67,11 +67,9 @@ def daily_loop(target_time, secs_min, secs_hr, secs_day, check=False):
 
 if __name__ == "__main__":
     target_time = [10, 00]
-    secs_min = 60
-    secs_hr = 60 * secs_min
-    secs_day = 24 * secs_hr
+    interval = 30
 
     Solucionare = solucionare.Module_SOLUCIONARE()
     Gdrive = exportdriver.Module_drive()
     while True:
-        daily_loop(target_time, secs_min, secs_hr, secs_day, False)
+        daily_loop(target_time, interval, True)

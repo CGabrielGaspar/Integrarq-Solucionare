@@ -83,13 +83,18 @@ class Module_SOLUCIONARE:
             box.send_keys(Keys.TAB)
 
     @staticmethod
-    def find_date():
-        """Encontra as data para preenchimento do formulário."""
+    def find_date(interval=30):
+        """Encontra as data para preenchimento do formulário.
+
+        :param int interval: Intervalo em dias para captura. Normalmente 30 dias.
+        """
         today = datetime.today()
         year = datetime.today().strftime('%Y')
 
-        delta = today - timedelta(days=45)
+        delta = today - timedelta(days=interval)  # TODO make this a variable
         day = delta.strftime('%d')
+        if day[0] == "0":
+            day = day[1]
         last_month = delta.strftime('%m')
 
         return day, last_month, year
@@ -107,10 +112,11 @@ class Module_SOLUCIONARE:
         infos = json.load(f)
         return infos['Solucionare']['clients'].get(client, {}).get('codes', [])
 
-    def email_send(self, driver, codes):
+    def email_send(self, driver, codes, interval=30):
         """
         Preenche o formulário no webservice.
 
+        :param interval: Intervalo em dias para captura. Normalmente 30 dias.
         :param object driver: Selenium Webdriver
         :param list codes:  Códigos aos quais serão enviados os andamentos
         """
@@ -133,7 +139,7 @@ class Module_SOLUCIONARE:
         driver.find_element(By.XPATH, '//*[@id="form_email"]/div[4]/div/label[3]/div/ins').click()
 
         # Define datas, hoje -1 mês; Insere datas no campo; Clica no bootstrap para inserir a data no form.
-        day, last_month, year = self.find_date()
+        day, last_month, year = self.find_date(interval)
         driver.find_element(By.XPATH, '//*[@id="form_email"]/div[5]/div/div[1]/div/input').send_keys(
             f"{day}/{last_month}/{year}", Keys.ESCAPE)
         driver.find_element(By.XPATH,
@@ -243,10 +249,11 @@ class Module_SOLUCIONARE:
         report = driver.find_element(By.XPATH, '//*[@id="modalRelatorio"]/div/div[2]/div[2]').text
         return info_panel, report
 
-    def run_processes(self, client, confirm=False):
+    def run_processes(self, client, interval=30, confirm=False):
         """
         Roda o processo.
 
+        :param interval: Intervalo em dias para captura. Normalmente 30 dias.
         :param str client: Um dos clientes em config.json (Bermudes_DF, Bermudes_RJ, JG, TAVAD)
         :param bool confirm: True/False - Aguardar verificação dos dados antes de realizar o envio.
         """
@@ -257,7 +264,7 @@ class Module_SOLUCIONARE:
             company, user, password = self.credentials_solucionare()
             self.login_solucionare(driver, self.url, company, user, password)
             codes = self.find_codes(client)
-            self.email_send(driver, codes)
+            self.email_send(driver, codes, interval)
         except Exception as e:
             print(e)
             raise Exception("Erro ao preencher formulário. Nenhum e-mail foi enviado.") from e
