@@ -20,7 +20,6 @@ class Module_SOLUCIONARE:
                             "e-mail antendimento@integrarq.com.br"
         self.url = "http://online.solucionarelj.com.br:9191/gerenciador/login.php"
 
-
     @staticmethod
     def init_driver():
         """Inicia e retorna o Webdriver"""
@@ -85,15 +84,15 @@ class Module_SOLUCIONARE:
 
     @staticmethod
     def find_date():
-        """Encontra as data para preenchimento do formulário"""
-        day = datetime.today()
-        month = datetime.today().strftime('%m')
+        """Encontra as data para preenchimento do formulário."""
+        today = datetime.today()
         year = datetime.today().strftime('%Y')
 
-        first_of = day.replace(day=1)
-        last_month = (first_of - timedelta(days=1)).strftime('%m')
+        delta = today - timedelta(days=45)
+        day = delta.strftime('%d')
+        last_month = delta.strftime('%m')
 
-        return day.strftime('%d'), month, last_month, year
+        return day, last_month, year
 
     @staticmethod
     def find_codes(client):
@@ -104,7 +103,6 @@ class Module_SOLUCIONARE:
         :param str client: Um dos clientes em config.json (Bermudes_DF, Bermudes_RJ, JG, TAVAD)
         :return list
         """
-        client_codes = []
         f = open("./config/config.json")
         infos = json.load(f)
         return infos['Solucionare']['clients'].get(client, {}).get('codes', [])
@@ -135,7 +133,7 @@ class Module_SOLUCIONARE:
         driver.find_element(By.XPATH, '//*[@id="form_email"]/div[4]/div/label[3]/div/ins').click()
 
         # Define datas, hoje -1 mês; Insere datas no campo; Clica no bootstrap para inserir a data no form.
-        day, month, last_month, year = self.find_date()
+        day, last_month, year = self.find_date()
         driver.find_element(By.XPATH, '//*[@id="form_email"]/div[5]/div/div[1]/div/input').send_keys(
             f"{day}/{last_month}/{year}", Keys.ESCAPE)
         driver.find_element(By.XPATH,
@@ -144,17 +142,12 @@ class Module_SOLUCIONARE:
         driver.find_element(By.XPATH,
                             '/html/body/div[2]/aside[2]/section[2]/div/div/div/div/form/div[5]/div/div[1]/div/span').click()
 
-        try:  # Windows
-            day_today = datetime.today().strftime("%#d")
-        except:  # Linux
-            day_today = datetime.today().strftime("%-d")
-
         first_row = True
         for row in table.find_elements(By.XPATH, './/td'):
             if row.text == "1":  # A partir do dia 1, pode selecionar qualquer data.
                 first_row = False
-            if row.text == day_today:
-                if int(row.text) >= 20 and first_row == True:  # Se o número alto e está na primeira linha. Mês passado
+            if row.text == day:
+                if int(row.text) >= 20 and first_row:  # Se o número alto e está na primeira linha. Mês passado
                     continue
                 row.click()
                 break
